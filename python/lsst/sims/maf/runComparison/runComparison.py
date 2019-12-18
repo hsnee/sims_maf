@@ -210,10 +210,11 @@ class RunComparison(object):
             getAll = True
         else:
             getAll = False
+        insubdir = subdir
         mDict = {}
         for r in self.runlist:
-            if subdir is not None:
-                subdirs = [subdir]
+            if insubdir is not None:
+                subdirs = [insubdir]
             else:
                 subdirs = list(self.runresults[r].keys())
             for subdir in subdirs:
