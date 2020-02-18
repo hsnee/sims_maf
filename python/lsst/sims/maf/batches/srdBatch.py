@@ -1,5 +1,6 @@
 """Sets of metrics to look at the SRD metrics.
 """
+import numpy as np
 import healpy as hp
 import lsst.sims.maf.metrics as metrics
 import lsst.sims.maf.slicers as slicers
@@ -38,7 +39,7 @@ def fOBatch(colmap=None, runName='opsim', extraSql=None, extraMetadata=None, nsi
     metricBundleDict
     """
     if colmap is None:
-        colmap = ColMapDict('opsimV4')
+        colmap = ColMapDict('fbs')
 
     bundleList = []
 
@@ -62,7 +63,7 @@ def fOBatch(colmap=None, runName='opsim', extraSql=None, extraMetadata=None, nsi
     # Set up fO metric.
     slicer = slicers.HealpixSlicer(nside=nside, lonCol=raCol, latCol=decCol, latLonDeg=degrees)
 
-    displayDict = {'group': 'FO metrics', 'subgroup': subgroup, 'order': 0}
+    displayDict = {'group': 'SRD FO metrics', 'subgroup': subgroup, 'order': 0}
 
     # Configure the count metric which is what is used for f0 slicer.
     metric = metrics.CountMetric(col=colmap['mjd'], metricName='fO')
@@ -120,7 +121,7 @@ def astrometryBatch(colmap=None, runName='opsim',
     metricBundleDict
     """
     if colmap is None:
-        colmap = ColMapDict('opsimV4')
+        colmap = ColMapDict('fbs')
     bundleList = []
 
     sql = ''
@@ -154,10 +155,14 @@ def astrometryBatch(colmap=None, runName='opsim',
     slicer = slicers.HealpixSlicer(nside=nside, lonCol=raCol, latCol=decCol, latLonDeg=degrees)
     subsetPlots = [plots.HealpixSkyMap(), plots.HealpixHistogram()]
 
-    displayDict = {'group': 'Parallax', 'subgroup': subgroup,
+    displayDict = {'group': 'SRD Parallax', 'subgroup': subgroup,
                    'order': 0, 'caption': None}
     # Expected error on parallax at 10 AU.
     plotmaxVals = (2.0, 15.0)
+    summary = [metrics.AreaSummaryMetric(area=18000, reduce_func=np.median, decreasing=False,
+                                         metricName='Median Parallax Error (WFD)')]
+    summary.append(metrics.PercentileMetric(percentile=95, metricName='95th Percentile Parallax Error'))
+    summary.append(standardSummary())
     for rmag, plotmax in zip(rmags_para, plotmaxVals):
         plotDict = {'xMin': 0, 'xMax': plotmax, 'colorMin': 0, 'colorMax': plotmax}
         metric = metrics.ParallaxMetric(metricName='Parallax Error @ %.1f' % (rmag), rmag=rmag,
@@ -166,7 +171,7 @@ def astrometryBatch(colmap=None, runName='opsim',
         bundle = mb.MetricBundle(metric, slicer, sql, metadata=metadata,
                                  stackerList=[parallaxStacker, ditherStacker],
                                  displayDict=displayDict, plotDict=plotDict,
-                                 summaryMetrics=standardSummary(),
+                                 summaryMetrics=summary,
                                  plotFuncs=subsetPlots)
         bundleList.append(bundle)
         displayDict['order'] += 1
@@ -211,9 +216,13 @@ def astrometryBatch(colmap=None, runName='opsim',
         displayDict['order'] += 1
 
     # Proper Motion metrics.
-    displayDict = {'group': 'Proper Motion', 'subgroup': subgroup, 'order': 0, 'caption': None}
+    displayDict = {'group': 'SRD Proper Motion', 'subgroup': subgroup, 'order': 0, 'caption': None}
     # Proper motion errors.
     plotmaxVals = (1.0, 5.0)
+    summary = [metrics.AreaSummaryMetric(area=18000, reduce_func=np.median, decreasing=False,
+                                         metricName='Median Proper Motion Error (WFD)')]
+    summary.append(metrics.PercentileMetric(metricName='95th Percentile Proper Motion Error'))
+    summary.append(standardSummary())
     for rmag, plotmax in zip(rmags_pm, plotmaxVals):
         plotDict = {'xMin': 0, 'xMax': plotmax, 'colorMin': 0, 'colorMax': plotmax}
         metric = metrics.ProperMotionMetric(metricName='Proper Motion Error @ %.1f' % rmag,
@@ -223,7 +232,7 @@ def astrometryBatch(colmap=None, runName='opsim',
         bundle = mb.MetricBundle(metric, slicer, sql, metadata=metadata,
                                  stackerList=[ditherStacker],
                                  displayDict=displayDict, plotDict=plotDict,
-                                 summaryMetrics=standardSummary(),
+                                 summaryMetrics=summary,
                                  plotFuncs=subsetPlots)
         bundleList.append(bundle)
         displayDict['order'] += 1

@@ -35,7 +35,6 @@ def setBatches(opsdb, colmap, args):
     return bdict
 
 
-
 if __name__ == '__main__':
     args = parseArgs(subdir='srd')
     opsdb, colmap = connectDb(args.dbfile)
